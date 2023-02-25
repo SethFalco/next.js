@@ -960,10 +960,23 @@ describe('Prerender', () => {
         () => next.cliOutput,
         /Warning: data for page "\/large-page-data" is 256 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance/
       )
-      await renderViaHTTP(next.url, '/blocking-fallback/lots-of-data')
       await check(
         () => next.cliOutput,
         /Warning: data for page "\/blocking-fallback\/\[slug\]" \(path "\/blocking-fallback\/lots-of-data"\) is 256 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance/
+      )
+    })
+
+    it('should only show warning once per page when large amount of page data is returned', async () => {
+      await renderViaHTTP(next.url, '/large-page-data-ssr')
+      await check(
+        () => next.cliOutput,
+        /Warning: data for page "\/large-page-data-ssr" is 256 kB which exceeds the threshold of 128 kB, this amount of data can reduce performance/
+      )
+
+      const outputIndex = next.cliOutput.length
+      await renderViaHTTP(next.url, '/large-page-data-ssr')
+      expect(next.cliOutput.slice(outputIndex)).not.toInclude(
+        'Warning: data for page'
       )
     })
 
@@ -1482,6 +1495,12 @@ describe('Prerender', () => {
                 next.buildId
               )}\\/large-page-data.json$`,
               page: '/large-page-data',
+            },
+            {
+              dataRouteRegex: `^\\/_next\\/data\\/${escapeRegex(
+                next.buildId
+              )}\\/large-page-data-ssr.json$`,
+              page: '/large-page-data-ssr',
             },
             {
               namedDataRouteRegex: `^/_next/data/${escapeRegex(
